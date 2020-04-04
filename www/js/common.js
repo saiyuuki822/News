@@ -1,7 +1,7 @@
 // This is a JavaScript file
 
-drupal_root = "https://syokudo.jpn.org/";
-api_root = "https://saiyuuki-syokudo.sakura.ne.jp/index.php/";
+drupal_root = "https://mynews.jpn.com/";
+api_root = "https://xfriends.jpn.com/index.php/";
 scroll_start_x = 0;
 scroll_start_y = 0;
 user = [];
@@ -103,6 +103,8 @@ function user_post_callback(data)
     } else {
       alert("ユーザー編集が成功しました。");
       tabbar = document.querySelector("ons-tabbar");
+
+      
       tabbar.setActiveTab(0);
     }
   } else {
@@ -150,6 +152,7 @@ function node_callback(data) {
     $('#node-template .node .picture').attr('src', value.picture);
     $('#node-template .post-image').attr('src', value.image);
     $('#node-template .node_title').html(value.title);
+    $('#node-template .node_title').parent('a').attr('href', '#'+value.nid);
     console.log(value);
     if(value.tag_name !== undefined) {
       $('#node-template .tags-wrapper button').attr('data-tag_id', value.tag_id);
@@ -219,6 +222,8 @@ function node_callback(data) {
       $('#node-area .node-'+value.nid+' .image_caption').remove();
     }
 
+      $('#node-area .node-'+value.nid).find('#carousel-list').attr('id', 'carousel-'+value.nid);
+
     $.each(value.comment, function(index, comment_value){
       if(user.uid == value.uid || user.uid == comment_value.uid) {
         $('#node-template .comment-template .comment-delete').attr('data-cid', comment_value.cid);
@@ -248,6 +253,11 @@ function node_callback(data) {
       $('#node-area #comment-area .comment-template:last').addClass('comment'+comment_value.cid);
       $('#node-area #comment-area .comment-template').removeClass('comment-template');
       
+      $('#node-area .node-'+value.nid+' #comment-area2').append(element);
+      $('#node-area #comment-area2 .comment-template').removeClass('hide');
+      $('#node-area #comment-area2 .comment-template:last').addClass('comment'+comment_value.cid);
+      $('#node-area #comment-area2 .comment-template').removeClass('comment-template');
+      //$('#node-area .node-'+value.nid+' #comment-area2').append(element);
     });
 
     $('#node-template .image_caption:not(:first)').remove();
@@ -475,7 +485,7 @@ function login_callback_after(data) {
     exec_url = api_root+"api/node_list/all/data";
     condition = {"uid":user.uid, "offset": offset, "limit": limit};
     exec_ajax(exec_url,"post", condition, node_callback, data, set_login_info);
-    //alert(exec_url);
+    //alert(exec_url);  
     exec_ajax_no_lock(api_root+"api/user_list/all","get",{}, user_callback);
     //alert(api_root+"api/user_list/all");
     set_view_user_data(data);
@@ -705,7 +715,7 @@ function scrollDirection(event) {
 
 
 function show_my_site(event) {
-  window.open('http://myportal.tokyo/'+user.name, '_blank', 'location=yes'); 
+  //swindow.open('http://myportal.jpn.com/'+user.name, '_blank', 'location=yes'); 
   return false;
 }
 
@@ -997,18 +1007,10 @@ function comment_callback(data) {
   var picture = $('.node-'+data.nid+' .comment-form .picture').attr('src');
   var user_name = $('.node-'+data.nid+' .comment-form .user_name').html();
   var body = data.comment;
-  //var now = new Date();
-  //var Year = now.getFullYear();
-  //var Month = now.getMonth()+1;
-  //var Date = now.getDate();
-  //var Hour = now.getHours();
-  //var Min = now.getMinutes();
-  //var Sec = now.getSeconds();
   $('.comment-template .picture').attr('src', picture);
   $('.comment-template .body').html(data.comment);
   $('.comment-template .user_name a').html(user_name);
   $('.comment-template .user_name').data(data.uid);
-  //$('.comment-template .created').html(Year + "/" + Month + "/" + Date + "/" + Hour + ":" + Min);
   var element = $('.comment-template').prop('outerHTML');
   $('.node-'+data.nid+' #comment-area').append(element);
   $('#comment-area .comment-template:last').addClass('comment'+data.cid);
@@ -1061,7 +1063,7 @@ function comment(event) {
   var picture = $(event.currentTarget).parents('.comment-form').find('.picture').attr('src');
   var uid = $('#uid').val();
   console.log(user_list);
-  exec_ajax(api_root+"api/post_comment","post", {"author_uid":node[nid].uid,"comment": comment_body,"uid": uid,"nid":nid,"title":node[nid].title, "user_name":user_list[uid].user_name}, comment_callback);
+  exec_ajax(api_root+"api/post_comment","post", {"author_uid":node[nid].uid,"comment": comment_body,"uid": uid,"nid":nid,"title":node[nid].title, "user_name":user.user_name}, comment_callback);
 
   return false;
 }
@@ -1273,11 +1275,187 @@ function show_my_profile(event) {
   put_follow_area(user);
 }
 
+function detail_callback(data) {
+  offset = offset + limit;
+  next = false;
+  
+  $.each(data.list, function(index, value){
+    if($('#node-area').find('.node-'+value.nid).length) {
+      return true;
+    }
+    node[value.nid] = value;
+    $('#node-template').addClass('node-'+value.nid);
+    $('#node-template .post').attr('id','node-'+value.nid);
+    
+    if(value.is_good_user == true) {
+      $('#node-template .good_user').attr('data-nid', value.nid);
+      $('#node-template .good_user').show();
+    } else {
+      $('#node-template .good_user').hide();
+    }
+    if(value.is_ungood_user == true) {
+      $('#node-template .but_user').attr('data-nid', value.nid);
+      $('#node-template .but_user').show();
+    } else {
+      $('#node-template .but_user').hide();
+    }
+    $('#node-template .user_name a').attr 
+    ('data-uid', value.uid);
+    $('#node-template .user_name a').attr 
+    ('data-name', value.name);
+    $('#node-template .user_name a').attr 
+    ('data-user_body', value.user_body);
+    $('#node-template .user_name a').html 
+    (value.user_name);
+    $('#node-template .node .picture').attr('src', value.picture);
+    $('#node-template .post-image').attr('src', value.image);
+    $('#node-template .node_title').html(value.title);
+    $('#node-template .node_title').parent('a').attr('href', '#'+value.nid);
+    console.log(value);
+    if(value.tag_name !== undefined) {
+      $('#node-template .tags-wrapper button').attr('data-tag_id', value.tag_id);
+      $('#node-template .tags-wrapper span').html(value.tag_name);
+    } else {
+    $('#node-template .tags-wrapper').hide();
+    }
+    $('#node-template .body').html(value.body_value);
+    $('#node-template .created').html(value.created);
+     if(user.uid == value.uid) {
+      $('#node-template .post_menu').show();
+      $('#node-template .post_delete').show();
+      $('#node-template .post_menu').attr('data-nid', value.nid);
+      $('#node-template .post_delete').attr('data-nid', value.nid);
+    } else {
+      $('#node-template .post_menu').hide();
+      $('#node-template .post_delete').hide();
+    }
+
+    $('#node-template .image_caption:first .field_image').attr('src', '');
+    $('#node-template .image_caption:first .caption').html('');
+    
+    var has_image_caption;
+    //条件は正しいが機能してないと思われる。
+    if(value.image_caption.length) {
+      $('#node-template #carousel').removeAttr('disabled');
+      has_image_caption = true;
+    } else {
+      $('#node-template #carousel').attr('disabled', true);
+      has_image_caption = false;
+    }
+    
+    $.each(value.image_caption, function(image_caption_idx, image_caption_value){
+      $('#node-template .image_caption:last .field_image').attr('src', image_caption_value.field_image);
+      $('#node-template .image_caption:last .caption').html(image_caption_value.caption);
+      if(value.image_caption[image_caption_idx+1] !== undefined ) {
+        $('#node-template .image_caption:last').after($('#node-template .image_caption:last').prop('outerHTML'));
+      }
+      //テンプレートをリセット
+      //$('#node-template .image_caption:last').remove();
+      //$('#node-template .image_caption:last .field_image').attr('src', '');
+      //$('#node-template .image_caption:last .caption').html('');
+      
+    });
+
+
+    var like_id = $('#node-template .good ons-icon').attr('id');
+    $('#node-template .good ons-icon').attr('id', like_id + value.nid);
+    var but_id = $('#node-template .but ons-icon').attr('id');
+    $('#node-template .but ons-icon').attr('id', but_id + value.nid);
+    var favorite_id = $('#node-template .favorite ons-icon').attr('id');
+    $('#node-template .favorite ons-icon').attr('id', favorite_id + value.nid);
+    var element = $('#node-template').prop('outerHTML');
+    $('#node-area').append(element);
+    $('#node-area #node-template').show();
+    $('#node-template-wrapper #node-template').removeClass('node-'+value.nid);
+    //$('#node-template-wrapper #node-template').attr('id','');
+    $('#node-area #node-template:last').attr('id', value.nid);
+    $('#node-template .tags-wrapper').show();
+    $('#node-template .good ons-icon').attr('id', like_id);
+    $('#node-template .but ons-icon').attr('id', but_id);
+    $('#node-template .favorite ons-icon').attr('id', favorite_id);
+    //$('#node-template .node-'+value.nid+'  comment_btn').attr('data-nid', value.nid);
+    $('#node-template .comment-form').find('.user_name').attr('data-nid', value.nid);
+
+    if(!has_image_caption) {
+      $('#node-area .node-'+value.nid+' .image_caption').remove();
+    }
+
+    $('#node-area .node-'+value.nid).find('#carousel-list').attr('id', 'carousel-'+value.nid);
+    
+    $.each(value.comment, function(index, comment_value){
+      if(user.uid == value.uid || user.uid == comment_value.uid) {
+        $('#node-template .comment-template .comment-delete').attr('data-cid', comment_value.cid);
+      } else {
+        $('#node-template .comment-template .comment-delete').hide();
+        
+      }
+      $('#node-template .comment-template .picture').attr('src', comment_value.picture);
+      $('#node-template .comment-template .user_name a').attr('data-user_body', comment_value.user_body);
+      $('#node-template .comment-template .user_name a').html(comment_value.user_name);
+      $('#node-template .comment-template .user_name a').attr('data-uid', comment_value.uid);
+      $('#node-template .comment-template .body').html(comment_value.body);
+      $('#node-template .comment-template .created').html(comment_value.created);
+      $('#node-template .image_caption').each(function(index, element){
+        if(index = 0) {
+          $(this).find('.field_image').val();
+          $(this).find('.caption').val();
+        } else {
+          //$(this).remove();
+        }
+      })
+
+
+      var element = $('#node-template .comment-template').prop('outerHTML');
+      $('#node-area .node-'+value.nid+' #comment-area').append(element);
+      $('#node-area #comment-area .comment-template').removeClass('hide');
+      $('#node-area #comment-area .comment-template:last').addClass('comment'+comment_value.cid);
+      $('#node-area #comment-area .comment-template').removeClass('comment-template');
+      
+      $('#node-area .node-'+value.nid+' #comment-area2').append(element);
+      $('#node-area #comment-area2 .comment-template').removeClass('hide');
+      $('#node-area #comment-area2 .comment-template:last').addClass('comment'+comment_value.cid);
+      $('#node-area #comment-area2 .comment-template').removeClass('comment-template');
+      //$('#node-area .node-'+value.nid+' #comment-area2').append(element);
+    });
+
+    $('#node-template .image_caption:not(:first)').remove();
+    $('#node-area').find('.node').hide();
+    $('.post-button-bar').hide();
+    //exec_ajax(api_root+"api/login","post", {"name":"saiyuuki","password":"saiyuuki3"}, login_callback);
+  });
+
+
+  //通知から起動した場合、アクティビティに自動遷移
+  if(move_activity) {
+    $(document).find('.activity-view').click();
+    tabbar = document.querySelector("ons-tabbar");
+    tabbar.setActiveTab(3);
+    move_activity = false;
+  }
+  
+}
+
 function show_detail_page(event) {
   var nid = $(this).parents('.node-wrapper').attr('id');
   var name = $(this).parents('.node-wrapper').find('.user_name a').data('name');
-  window.open('http://myportal.tokyo/'+name+'/detail?nid='+nid, '_blank', 'location=yes'); 
-  return false;
+  //var carousel = $(this).parents('.node-'+nid).find('#carousel-list');
+
+  var carousel = document.getElementById('carousel-'+nid);
+  carousel.next();
+  //window.open('http://myportal.jpn.com/'+name+'/detail?nid='+nid, '_blank', 'location=yes');
+  var href = $(this).parent('a').attr('href');
+    if(href !== undefined) {
+      var nid = href.replace(/[^0-9]/g, '');
+      tabbar.setActiveTab(0); 
+      $('#node-area').html('');
+      var reset_offset = function() {
+        offset = 0;
+        exec_url = api_root+"api/node_list/all/data/";
+        condition = {"uid":user.uid};
+      };
+      exec_ajax(api_root+"api/node_list/node/"+nid,"post",{"uid":user.uid,"offset":0,"limit":1}, detail_callback, null, reset_offset);
+    }
+    return false;
 }
 
 // 写真撮影 成功
